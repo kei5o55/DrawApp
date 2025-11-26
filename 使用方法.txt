@@ -1,0 +1,7 @@
+draw_app.exeより起動(拡張子を.exeに戻してください）
+
+・マウスの左クリックで描画範囲を塗りつぶす。
+・Ctrl+Z,Ctrl+Yでundoとredo
+・elaserボタンを押すことで消しゴムを使用
+・clearボタンを押すことで全体を白紙に
+・saveボタンを押すことでoutput.bmpとして保存

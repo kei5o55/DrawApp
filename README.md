@@ -13,6 +13,7 @@
 - 画面全体消去機能
 - ブラシのサイズ変更スライダー
 - bmp形式での画像保存
+![Animation2](https://github.com/user-attachments/assets/ef1947fe-eeb0-4cbb-a0bd-0210d852b276)
 
 # 仕様技術
 - **C言語**

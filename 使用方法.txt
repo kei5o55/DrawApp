@@ -5,3 +5,22 @@ draw_app.exeより起動(拡張子を.exeに戻してください）
 ・elaserボタンを押すことで消しゴムを使用
 ・clearボタンを押すことで全体を白紙に
 ・saveボタンを押すことでoutput.bmpとして保存
+
+コンパイル(12/3更新)
+gcc main.c ui.c undo.c -o draw_app.exe ^
+  -I SDL2\include -I SDL2_ttf\include ^
+  -L SDL2\lib -L SDL2_ttf\lib ^
+  -lSDL2 -lSDL2_ttf
+
+こっち
+「powerchell」
+gcc main.c ui.c undo.c -o draw_app.exe `
+  -I SDL2/include `
+  -I SDL2/include/SDL2 `
+  -I SDL2_ttf/include `
+  -I SDL2_ttf/include/SDL2 `
+  -L SDL2/lib `
+  -L SDL2_ttf/lib `
+  -lSDL2 -lSDL2_ttf
+
+パスを通している

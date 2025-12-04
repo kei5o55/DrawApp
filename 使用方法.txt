@@ -14,13 +14,16 @@ gcc main.c ui.c undo.c -o draw_app.exe ^
 
 こっち
 「powerchell」
-gcc main.c ui.c undo.c -o draw_app.exe `
+gcc main.c ui.c undo.c slider.c -o draw_app.exe `
   -I SDL2/include `
   -I SDL2/include/SDL2 `
   -I SDL2_ttf/include `
   -I SDL2_ttf/include/SDL2 `
   -L SDL2/lib `
   -L SDL2_ttf/lib `
-  -lSDL2 -lSDL2_ttf
+  -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf
+
 
 パスを通している
+
+

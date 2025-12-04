@@ -2,14 +2,18 @@
 #include <SDL2/SDL_ttf.h>
 #include <math.h>
 #include <stdio.h>
+#include "config.h"
+
 
 #include "ui.h"
 #include "undo.h"
+#include "slider.h"
 
-#define WINDOW_WIDTH 800    // window横幅
-#define WINDOW_HEIGHT 600   // window縦幅
-#define UI_HEIGHT 60        // 下部UI領域の高さ
-#define SLIDER_Y (WINDOW_HEIGHT - UI_HEIGHT)
+
+//#define WINDOW_WIDTH 800    // window横幅
+///#define WINDOW_HEIGHT 600   // window縦幅
+//#define UI_HEIGHT 60        // 下部UI領域の高さ
+//#define SLIDER_Y (WINDOW_HEIGHT - UI_HEIGHT)
 
 // 現在のツール状態（線の太さ・消しゴム）
 typedef struct {
@@ -85,7 +89,7 @@ int main(int argc, char* argv[]) {
     Button btn_eraser = {140, SLIDER_Y + 25, 100, 30, "Eraser", 0, 0};
     Button btn_save   = {260, SLIDER_Y + 25, 100, 30, "Save",   0, 0};
 
-    while (running) {
+    while (running) {//メインループ開始
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT)
                 running = 0;
@@ -94,32 +98,35 @@ int main(int argc, char* argv[]) {
             if (e.type == SDL_MOUSEBUTTONDOWN &&
                 e.button.button == SDL_BUTTON_LEFT) {
 
-                int mx = e.button.x, my = e.button.y;
+                int mx = e.button.x, my = e.button.y;//マウス座標(x,y)
 
                 // ボタン処理
-                if (is_button_clicked(btn_clear, mx, my)) {
+                if (is_button_clicked(btn_clear, mx, my)) {//clear
                     SDL_SetRenderTarget(renderer, canvas);
                     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
                     SDL_RenderClear(renderer);
                     SDL_SetRenderTarget(renderer, NULL);
                     continue;
                 }
-                if (is_button_clicked(btn_eraser, mx, my)) {
-                    tool.eraser = !tool.eraser;
+                if (is_button_clicked(btn_eraser, mx, my)) {//eraser
+                    tool.eraser = !tool.eraser;//トグル切り替え
                     btn_eraser.active = tool.eraser;
                     continue;
                 }
-                if (is_button_clicked(btn_save, mx, my)) {
+                if (is_button_clicked(btn_save, mx, my)) {//save
                     save_canvas(renderer, canvas);
                     continue;
                 }
 
                 // スライダー
-                if (my >= SLIDER_Y && my <= SLIDER_Y + 20) {
-                    adjusting_slider = 1;
-                    slider_pos = mx;
-                    slider_pos = clamp(slider_pos, 20, WINDOW_WIDTH - 20);
-                    tool.thickness = (slider_pos / 8) + 1;
+                if (my >= SLIDER_Y && my <= SLIDER_Y + 20 &&mx >= 20 && mx <= WINDOW_WIDTH - 20) {
+                    adjusting_slider = 1;//スライダーを掴んでいるフラグ
+                    slider_pos = mx;//スライダーの位置更新
+                    slider_pos = clamp(slider_pos, 20, WINDOW_WIDTH - 20);//範囲
+
+                    slider_apply(mx, &slider_pos, &tool.thickness);//サイズ変更の関数を呼び出し（マウスX座標、スライダー位置、線の太さ）
+                    continue;
+
                 }
                 // キャンバス
                 else if (my < SLIDER_Y) {
@@ -144,8 +151,16 @@ int main(int argc, char* argv[]) {
 
                 if (adjusting_slider) {
                     slider_pos = e.motion.x;
-                    slider_pos = clamp(slider_pos, 20, WINDOW_WIDTH - 20);
-                    tool.thickness = (slider_pos / 8) + 1;
+                    slider_pos = mouseX;//スライダーの位置更新
+                    slider_pos = clamp(slider_pos, 20, WINDOW_WIDTH - 20);//範囲
+
+                    slider_apply(mouseX, &slider_pos, &tool.thickness);//サイズ変更の関数を呼び出し（マウスX座標、スライダー位置、線の太さ）
+
+                    char text[64];
+                    sprintf(text, "Knob X: %d", slider_pos);//デバッグ用
+                    draw_text(renderer, font, text, 100, SLIDER_Y - 50);
+                    printf("Slider position: %d\n", slider_pos);
+
                 }
 
                 if (drawing && e.motion.y < SLIDER_Y) {

@@ -1,6 +1,7 @@
 // ui.c
 #include "ui.h"
 #include <stdio.h>
+#include "config.h"
 
 
 // テキスト描画

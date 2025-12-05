@@ -10,21 +10,29 @@
 #include "slider.h"
 
 
-//#define WINDOW_WIDTH 800    // window横幅
-///#define WINDOW_HEIGHT 600   // window縦幅
-//#define UI_HEIGHT 60        // 下部UI領域の高さ
-//#define SLIDER_Y (WINDOW_HEIGHT - UI_HEIGHT)
+typedef enum {//ブラシの種類
+    BRUSH_RECT,
+    BRUSH_CIRCLE,
+    BRUSH_COUNT
+} BrushType;
 
 // 現在のツール状態（線の太さ・消しゴム）
 typedef struct {
     int thickness;
     int eraser;
+    BrushType brush;
 } ToolState;
+
+ToolState tool = {5, 0, BRUSH_CIRCLE};//線の太さ5px、消しゴムOFF、円形ブラシ（初期値
+
+Button brushes[BRUSH_COUNT];//ブラシの種類ボタン配列
+
+
 
 // ユーティリティ
 int clamp(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-// 線プレビュー用の円描画
+// 円描画
 void draw_circle(SDL_Renderer* renderer, int cx, int cy, int radius) {
     for (int w = -radius; w <= radius; w++) {
         for (int h = -radius; h <= radius; h++) {
@@ -82,12 +90,35 @@ int main(int argc, char* argv[]) {
     int running = 1, drawing = 0, adjusting_slider = 0;
     int prevX = 0, prevY = 0, slider_pos = 200;
     int mouseX = 0, mouseY = 0;
-    ToolState tool = {5, 0};   // 線の太さ5px、消しゴムOFF
 
     // UIボタン
     Button btn_clear  = {20,  SLIDER_Y + 25, 100, 30, "Clear",  0, 0};
     Button btn_eraser = {140, SLIDER_Y + 25, 100, 30, "Eraser", 0, 0};
     Button btn_save   = {260, SLIDER_Y + 25, 100, 30, "Save",   0, 0};
+
+    // ブラシ選択ボタン（右下に配置）
+    int brush_w = 80;//ボタン幅
+    int brush_h = 30;//ボタン高さ
+    int brush_y = SLIDER_Y + 25;//ボタンY位置
+    int margin_right = 20;   // 右端からの余白
+    int gap = 10;            // ボタン間の隙間
+
+    // 右端から「Circle」「Rect」の順に並べるイメージ
+    brushes[BRUSH_CIRCLE] = (Button){
+        WINDOW_WIDTH - margin_right - brush_w,//X位置
+        brush_y,
+        brush_w, brush_h,
+        "Circle",
+        1, 0//初期選択状態
+    };
+
+    brushes[BRUSH_RECT] = (Button){
+        WINDOW_WIDTH - margin_right - brush_w * 2 - gap,//X位置
+        brush_y,
+        brush_w, brush_h,
+        "Rect",
+        0, 0   
+    };
 
     while (running) {//メインループ開始
         while (SDL_PollEvent(&e)) {
@@ -117,14 +148,23 @@ int main(int argc, char* argv[]) {
                     save_canvas(renderer, canvas);
                     continue;
                 }
+                for (int i = 0; i < BRUSH_COUNT; i++) {
+                     if (is_button_clicked(brushes[i], mx, my)) {
+                        tool.brush = i;
+                    for (int j = 0; j < BRUSH_COUNT; j++)
+                        brushes[j].active = (j == i);
+                        break;
+                    }
+                }
+
 
                 // スライダー
                 if (my >= SLIDER_Y && my <= SLIDER_Y + 20 &&mx >= 20 && mx <= WINDOW_WIDTH - 20) {
                     adjusting_slider = 1;//スライダーを掴んでいるフラグ
                     slider_pos = mx;//スライダーの位置更新
                     slider_pos = clamp(slider_pos, 20, WINDOW_WIDTH - 20);//範囲
-
-                    slider_apply(mx, &slider_pos, &tool.thickness);//サイズ変更の関数を呼び出し（マウスX座標、スライダー位置、線の太さ）
+                    slider_apply(mx, &slider_pos, &tool.thickness);/*サイズ変更の関数を呼び出し（マウスX座標、スライダー位置、線の太さ）
+                                                                       メインの変数を変更したいのでポインタで渡す．mxはただの値なのでそのまま*/
                     continue;
 
                 }
@@ -154,8 +194,8 @@ int main(int argc, char* argv[]) {
                     slider_pos = mouseX;//スライダーの位置更新
                     slider_pos = clamp(slider_pos, 20, WINDOW_WIDTH - 20);//範囲
 
-                    slider_apply(mouseX, &slider_pos, &tool.thickness);//サイズ変更の関数を呼び出し（マウスX座標、スライダー位置、線の太さ）
-
+                    slider_apply(mouseX, &slider_pos, &tool.thickness);/*サイズ変更の関数を呼び出し（マウスX座標、スライダー位置、線の太さ）
+                                                                       メインの変数を変更したいのでポインタで渡す．mxはただの値なのでそのまま*/
                     char text[64];
                     sprintf(text, "Knob X: %d", slider_pos);//デバッグ用
                     draw_text(renderer, font, text, 100, SLIDER_Y - 50);
@@ -163,30 +203,33 @@ int main(int argc, char* argv[]) {
 
                 }
 
-                if (drawing && e.motion.y < SLIDER_Y) {
-                    int x = e.motion.x, y = e.motion.y;
-                    int dx = x - prevX, dy = y - prevY;
-                    int steps = SDL_max(SDL_abs(dx), SDL_abs(dy));
+                if (drawing && e.motion.y < SLIDER_Y) {//描画モードかつキャンバス内
+                    
+                    int x = e.motion.x, y = e.motion.y;//現在座標
+                    int dx = x - prevX, dy = y - prevY;//移動量の差分を取る
+                    int steps = SDL_max(SDL_abs(dx), SDL_abs(dy));//分割数計算ピクセル単位で計算しているので拡張性あり
 
-                    SDL_SetRenderTarget(renderer, canvas);
-                    if (tool.eraser)
-                        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+                    SDL_SetRenderTarget(renderer, canvas);//レンダリングターゲットをキャンバスに変更
+                    if (tool.eraser)//消しゴムモードのとき
+                        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);//白色で描画
                     else
-                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);//黒色で描画（ここに色選択機能を追加しても良い）
 
-                    for (int i = 0; i <= steps; i++) {
-                        int px = prevX + dx * i / steps;
+                    for (int i = 0; i <= steps; i++) {//補完描画ループ（steps=分割数）
+                        int px = prevX + dx * i / steps;//補完座標計算（floatにするとより正確な補完？
                         int py = prevY + dy * i / steps;
-                        SDL_Rect rect = {
-                            px - tool.thickness / 2,
-                            py - tool.thickness / 2,
-                            tool.thickness, tool.thickness
-                        };
-                        SDL_RenderFillRect(renderer, &rect);
+                        int radius = tool.thickness / 2;//半径（ツールサイズの半分
+                        switch (tool.brush) {
+                            case BRUSH_RECT:   SDL_Rect rect = { px - radius,py - radius,tool.thickness,tool.thickness};//四角形描写（ここでしか使わないので円と違い直接描いています）
+                                                SDL_RenderFillRect(renderer, &rect);
+                                                break;
+                            case BRUSH_CIRCLE: draw_circle(renderer, px, py, radius); break;//円描写（関数から）
+                            }
+
                     }
-                    SDL_SetRenderTarget(renderer, NULL);
-                    prevX = x;
-                    prevY = y;
+                    SDL_SetRenderTarget(renderer, NULL);//レンダリングターゲットを元に戻す
+                    prevX = x;//前回座標更新
+                    prevY = y;//前回座標更新
                 }
             }
 
@@ -220,6 +263,8 @@ int main(int argc, char* argv[]) {
         SDL_Rect ui_bg = {0, SLIDER_Y, WINDOW_WIDTH, UI_HEIGHT};
         SDL_SetRenderDrawColor(renderer, 240, 240, 240, 255);
         SDL_RenderFillRect(renderer, &ui_bg);
+        for (int i = 0; i < BRUSH_COUNT; i++) draw_button(renderer, brushes[i], font);
+
 
         // スライダーラインとノブ
         SDL_SetRenderDrawColor(renderer, 180, 180, 180, 255);
@@ -247,3 +292,4 @@ int main(int argc, char* argv[]) {
     SDL_Quit();
     return 0;
 }
+

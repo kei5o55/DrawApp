@@ -1,0 +1,18 @@
+{
+  "configurations": [
+    {
+      "name": "Win32",
+      "includePath": [
+        "C:/Users/komak/Desktop/github/DrawApp/SDL2/include",
+        "C:/Users/komak/Desktop/github/DrawApp/SDL2/include/SDL2",
+        "C:/Users/komak/Desktop/github/DrawApp/SDL2_ttf/include",
+        "C:/Users/komak/Desktop/github/DrawApp/SDL2_ttf/include/SDL2",
+        "${workspaceFolder}/**"
+      ],
+      "compilerPath": "C:/mingw64/bin/gcc.exe",
+      "cStandard": "c11",
+      "intelliSenseMode": "windows-gcc-x64"
+    }
+  ],
+  "version": 4
+}

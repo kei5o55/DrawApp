@@ -7,6 +7,14 @@
 - C言語によるGUIアプリケーション開発の全体フローを体験
 
 
+# ビルド
+
+以下のコマンドをプロジェクトディレクトリで実行します。
+
+```bash
+gcc main.c ui.c undo.c slider.c -o draw_app.exe -I SDL2\include -I SDL2\include\SDL2 -I SDL2_ttf\include -I SDL2_ttf\include\SDL2 -L SDL2\lib -L SDL2_ttf\lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf
+```
+
 # 主な機能
 - マウスクリックによるペイント描画
 - 消しゴム機能
